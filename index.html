@@ -27,7 +27,8 @@
     <input type="file" id="fileInput" />
     <div id="headers"></div>
 
-    <label for="worksheetNameSetting">工作表名稱</label>
+    <p></p>
+    <label for="worksheetNameSetting"><strong>工作表名稱</strong></label>
     <input
       id="worksheetNameSetting"
       type="text"
@@ -234,6 +235,11 @@
         previewDoc.open();
         previewDoc.write(resultHTML);
         previewDoc.close();
+
+        previewFrame.scrollIntoView({
+          behavior: "smooth",
+          block: "center",
+        });
       });
 
       // 複製按鈕功能
