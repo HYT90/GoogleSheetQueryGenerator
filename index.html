@@ -32,7 +32,7 @@
     <input
       id="worksheetNameSetting"
       type="text"
-      placeholder="例如：班級1"
+      placeholder="例如：各班級成績表1"
       style="width: 100%; margin-bottom: 10px"
     />
 
@@ -41,11 +41,11 @@
       type="text"
       id="scriptUrl"
       style="width: 100%"
-      placeholder="請輸入 apps script 的 doGet 網址"
+      placeholder="請輸入 apps script 部署的網址"
     />
     <p></p>
-    <button id="generateBtn">產生 查詢系統網頁 的程式碼</button>
-    <button id="cleariframecontent">清空產生的內容</button>
+    <button id="generateBtn">產生 查詢系統預覽網頁及程式碼</button>
+    <button id="cleariframecontent">清空產生的程式碼</button>
 
     <h3>HTML 程式碼</h3>
     <textarea
@@ -191,32 +191,32 @@
         const btn = document.getElementById("btn");
         async function query() {
           btn.disabled = true;
-          btn.innerText = "查詢中...";
+          btn.innerText = "正在查詢中，請稍後...";
           const params = {};
           ${paramScript}
-        const sheetName = "${worksheetNameSetting}";
-        params["sheetName"] = sheetName;
-        const reqURL=url + "?" + new URLSearchParams(params);
-        console.log("請求 URL:", reqURL);
-        try {
-          const res = await fetch(reqURL);
-          const data = await res.json();
-          const resultDiv = document.getElementById("result");
-          resultDiv.innerHTML = Object.entries(data)
-          .map(([key, val]) => \`\${key}: \${val}\`)
-          .join("<br>");
-          resultDiv.scrollIntoView({
-            behavior: "smooth",
-            block: "center"
-            });
+          const sheetName = "${worksheetNameSetting}";
+          params["sheetName"] = sheetName;
+          const reqURL=url + "?" + new URLSearchParams(params);
+          console.log("請求 URL:", reqURL);
+          try {
+            const res = await fetch(reqURL);
+            const data = await res.json();
+            const resultDiv = document.getElementById("result");
+            resultDiv.innerHTML = Object.entries(data)
+            .map(([key, val]) => \`\${key}: \${val}\`)
+            .join("<br>");
+            resultDiv.scrollIntoView({
+              behavior: "smooth",
+              block: "center"
+              });
             } catch (error) {
-          const resultDiv = document.getElementById("result");
-          resultDiv.innerHTML = "<span class='error'>查詢失敗，請重新嘗試。</span>";
-          } finally {
-            btn.disabled = false;
-            btn.innerText = "查詢";
-          }
-        };
+              const resultDiv = document.getElementById("result");
+              resultDiv.innerHTML = "<span class='error'>查詢失敗，請<strong>重新嘗試</strong>。</span>";
+            } finally {
+              btn.disabled = false;
+              btn.innerText = "查詢";
+            }
+          };
     <\/script>
       `;
 
