@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+  <head>
+    <meta charset="UTF-8" />
+    <title>查詢表單生成器</title>
+    <style>
+      body {
+        font-family: Arial;
+        padding: 20px;
+      }
+      #headers {
+        margin-top: 20px;
+      }
+      .header-item {
+        margin-bottom: 5px;
+      }
+      textarea {
+        width: 100%;
+        height: 300px;
+        margin-top: 20px;
+      }
+    </style>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.mini.min.js"></script>
+  </head>
+  <body>
+    <h2>載入 Excel檔</h2>
+    <input type="file" id="fileInput" />
+    <div id="headers"></div>
+
+    <label for="worksheetNameSetting">工作表名稱</label>
+    <input
+      id="worksheetNameSetting"
+      type="text"
+      placeholder="例如：班級1"
+      style="width: 100%; margin-bottom: 10px"
+    />
+
+    <h3>Apps Script 網址</h3>
+    <input
+      type="text"
+      id="scriptUrl"
+      style="width: 100%"
+      placeholder="請輸入 apps script 的 doGet 網址"
+    />
+    <p></p>
+    <button id="generateBtn">產生 查詢系統網頁 的程式碼</button>
+
+    <h3>生成網頁預覽</h3>
+    <iframe
+      id="codePreview"
+      style="width: 50%; height: 500px; border: 1px solid #ccc"
+    ></iframe>
+
+    <h3>HTML 程式碼</h3>
+    <textarea
+      id="outputCode"
+      rows="12"
+      style="width: 100%; font-family: monospace"
+    ></textarea>
+    <button id="copyBtn">複製程式碼</button>
+    <span id="copyStatus" style="margin-left: 10px; color: green"></span>
+    <script>
+      const fileInput = document.getElementById("fileInput");
+      const headersDiv = document.getElementById("headers");
+      const output = document.getElementById("outputCode");
+      let headers = [];
+
+      fileInput.addEventListener("change", (e) => {
+        const file = e.target.files[0];
+        const reader = new FileReader();
+        reader.onload = function (event) {
+          const data = new Uint8Array(event.target.result);
+          const workbook = XLSX.read(data, { type: "array" });
+          const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+          const jsonData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+          headers = jsonData[0];
+          headersDiv.innerHTML = "";
+          headers.forEach((header, index) => {
+            const div = document.createElement("div");
+            div.className = "header-item";
+            div.innerHTML = `
+            <label>
+              <input type="checkbox" data-index="${index}">
+              ${header} (ID: param${index})
+            </label>
+          `;
+            headersDiv.appendChild(div);
+          });
+        };
+        reader.readAsArrayBuffer(file);
+      });
+
+      document.getElementById("generateBtn").addEventListener("click", () => {
+        const url = document.getElementById("scriptUrl").value;
+        const checkboxes = headersDiv.querySelectorAll(
+          'input[type="checkbox"]'
+        );
+        let inputsHTML = "",
+          paramScript = "";
+
+        checkboxes.forEach((cb, i) => {
+          const isChecked = cb.checked;
+          const headerName = headers[i];
+          const inputId = `param${i}`;
+          if (isChecked) {
+            inputsHTML += `<label for="${inputId}">請輸入${headerName}：</label><input id="${inputId}" placeholder="${headerName}"><br>\n`;
+            paramScript += `params["${inputId}"] = document.getElementById("${inputId}").value;\n`;
+          }
+        });
+
+        const worksheetNameSetting = document.getElementById(
+          "worksheetNameSetting"
+        ).value;
+
+        const resultHTML = `
+        <style>
+        .query-form {
+          max-width: 500px;
+          margin: 20px auto;
+          padding: 20px;
+          background: #f9f9f9;
+          border: 1px solid #ccc;
+          border-radius: 8px;
+          box-shadow: 0 0 10px rgba(0,0,0,0.1);
+          font-family: "Segoe UI", sans-serif;
+        }
+
+        .query-form h2 {
+          text-align: center;
+          margin-bottom: 20px;
+          color: #333;
+        }
+
+        .query-form label {
+          display: block;
+          margin: 10px 0 5px;
+          font-weight: 500;
+          color: #555;
+        }
+
+        .query-form input {
+          width: 100%;
+          padding: 8px;
+          border: 1px solid #aaa;
+          border-radius: 4px;
+          box-sizing: border-box;
+        }
+
+        #result {
+          background: #fff;
+          border: 1px solid #ddd;
+          padding: 10px;
+          border-radius: 4px;
+          min-height: 60px;
+          margin-top: 10px;
+          color: #222;
+          font-size: 14px;
+        }
+
+        button {
+          margin-top: 20px;
+          width: 100%;
+          padding: 10px;
+          background: #007D7D;
+          color: white;
+          border: none;
+          border-radius: 6px;
+          font-size: 16px;
+          cursor: pointer;
+          transition: background 0.3s;
+        }
+
+        button:hover {
+          background: #005858;
+        }
+
+        button:disabled {
+          background-color: #cccccc;
+          cursor: not-allowed;
+        }
+
+        .error {
+          color: red;
+        }
+      </style>
+
+      <form class="query-form">
+        ${inputsHTML}
+        <label for="result">查詢結果：</label><div id="result"></div>
+      </form>
+
+      <button id="btn" onclick="query()">查詢</button>
+      <script>
+      const url = "${url}";
+      const btn = document.getElementById("btn");
+      async function query() {
+        btn.disabled = true;
+        btn.innerText = "查詢中...";
+        const params = {};
+        ${paramScript}
+        const sheetName = "${worksheetNameSetting}";
+        params["sheetName"] = sheetName;
+        const reqURL=url + "?" + new URLSearchParams(params);
+        console.log("請求 URL:", reqURL);
+        try {
+          const res = await fetch(reqURL);
+          const data = await res.json();
+          const resultDiv = document.getElementById("result");
+          resultDiv.innerHTML = Object.entries(data)
+            .map(([key, val]) => \`\${key}: \${val}\`)
+            .join("<br>");
+          resultDiv.scrollIntoView({
+            behavior: "smooth",
+            block: "center"
+          });
+        } catch (error) {
+          const resultDiv = document.getElementById("result");
+          resultDiv.innerHTML = "<span class='error'>查詢失敗，請重新嘗試。</span>";
+        } finally {
+          btn.disabled = false;
+          btn.innerText = "查詢";
+        }
+      }
+      <\/script>
+      `;
+
+        // 程式碼顯示在 textarea 中
+        output.value = resultHTML.trim();
+
+        // 渲染在 iframe 中的預覽區
+        const previewFrame = document.getElementById("codePreview");
+        const previewDoc =
+          previewFrame.contentDocument || previewFrame.contentWindow.document;
+        previewDoc.open();
+        previewDoc.write(resultHTML);
+        previewDoc.close();
+      });
+
+      // 複製按鈕功能
+      document.getElementById("copyBtn").addEventListener("click", () => {
+        const code = document.getElementById("outputCode").value;
+        navigator.clipboard
+          .writeText(code)
+          .then(() => {
+            const status = document.getElementById("copyStatus");
+            status.textContent = "已複製！";
+            setTimeout(() => (status.textContent = ""), 1500); // 1.5 秒後清除提示
+          })
+          .catch((err) => {
+            alert("複製失敗：" + err);
+          });
+      });
+    </script>
+  </body>
+</html>
