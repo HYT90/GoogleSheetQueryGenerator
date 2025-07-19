@@ -45,12 +45,7 @@
     />
     <p></p>
     <button id="generateBtn">產生 查詢系統網頁 的程式碼</button>
-
-    <h3>生成網頁預覽</h3>
-    <iframe
-      id="codePreview"
-      style="width: 50%; height: 500px; border: 1px solid #ccc"
-    ></iframe>
+    <button id="cleariframecontent">清空產生的內容</button>
 
     <h3>HTML 程式碼</h3>
     <textarea
@@ -192,13 +187,13 @@
 
       <button id="btn" onclick="query()">查詢</button>
       <script>
-      const url = "${url}";
-      const btn = document.getElementById("btn");
-      async function query() {
-        btn.disabled = true;
-        btn.innerText = "查詢中...";
-        const params = {};
-        ${paramScript}
+        const url = "${url}";
+        const btn = document.getElementById("btn");
+        async function query() {
+          btn.disabled = true;
+          btn.innerText = "查詢中...";
+          const params = {};
+          ${paramScript}
         const sheetName = "${worksheetNameSetting}";
         params["sheetName"] = sheetName;
         const reqURL=url + "?" + new URLSearchParams(params);
@@ -208,38 +203,49 @@
           const data = await res.json();
           const resultDiv = document.getElementById("result");
           resultDiv.innerHTML = Object.entries(data)
-            .map(([key, val]) => \`\${key}: \${val}\`)
-            .join("<br>");
+          .map(([key, val]) => \`\${key}: \${val}\`)
+          .join("<br>");
           resultDiv.scrollIntoView({
             behavior: "smooth",
             block: "center"
-          });
-        } catch (error) {
+            });
+            } catch (error) {
           const resultDiv = document.getElementById("result");
           resultDiv.innerHTML = "<span class='error'>查詢失敗，請重新嘗試。</span>";
-        } finally {
-          btn.disabled = false;
-          btn.innerText = "查詢";
-        }
-      }
-      <\/script>
+          } finally {
+            btn.disabled = false;
+            btn.innerText = "查詢";
+          }
+        };
+    <\/script>
       `;
 
         // 程式碼顯示在 textarea 中
         output.value = resultHTML.trim();
 
-        // 渲染在 iframe 中的預覽區
-        const previewFrame = document.getElementById("codePreview");
-        const previewDoc =
-          previewFrame.contentDocument || previewFrame.contentWindow.document;
-        previewDoc.open();
-        previewDoc.write(resultHTML);
-        previewDoc.close();
-
-        previewFrame.scrollIntoView({
+        output.scrollIntoView({
           behavior: "smooth",
           block: "center",
         });
+
+        const previewWindow = window.open("", "_blank"); // 開新視窗
+        previewWindow.document.open();
+        previewWindow.document.write(`
+        <!DOCTYPE html>
+        <html lang="zh-TW">
+        <head>
+          <meta charset="UTF-8">
+          <title>查詢區塊預覽</title>
+        </head>
+        <body
+        style="width: 30%; height: 500px; border: 1px solid #ccc"
+        >
+          <h3>查詢區塊預覽</h3>
+          ${output.value}
+        </body>     
+        </html>
+        `); // 寫入 HTML
+        previewWindow.document.close();
       });
 
       // 複製按鈕功能
@@ -256,6 +262,12 @@
             alert("複製失敗：" + err);
           });
       });
+
+      document
+        .getElementById("cleariframecontent")
+        .addEventListener("click", () => {
+          output.value = "";
+        });
     </script>
   </body>
 </html>
