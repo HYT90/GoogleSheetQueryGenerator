@@ -202,21 +202,25 @@
             const res = await fetch(reqURL);
             const data = await res.json();
             const resultDiv = document.getElementById("result");
-            resultDiv.innerHTML = Object.entries(data)
-            .map(([key, val]) => \`\${key}: \${val}\`)
-            .join("<br>");
-            resultDiv.scrollIntoView({
-              behavior: "smooth",
-              block: "center"
+            if ("message" in data) {
+              alert(data.message);
+            } else {
+              resultDiv.innerHTML = Object.entries(data)
+                .map(([key, val]) => \`\${key}: \${val}\`)
+                .join("<br>");
+              resultDiv.scrollIntoView({
+                behavior: "smooth",
+                block: "center"
               });
-            } catch (error) {
-              const resultDiv = document.getElementById("result");
-              resultDiv.innerHTML = "<span class='error'>查詢失敗，請<strong>重新嘗試</strong>。</span>";
-            } finally {
-              btn.disabled = false;
-              btn.innerText = "查詢";
             }
-          };
+          } catch (error) {
+            const resultDiv = document.getElementById("result");
+            resultDiv.innerHTML = "<span class='error'>查詢失敗，請<strong>重新嘗試</strong>。</span>";
+          } finally {
+            btn.disabled = false;
+            btn.innerText = "查詢";
+          }
+        };
     <\/script>
       `;
 
