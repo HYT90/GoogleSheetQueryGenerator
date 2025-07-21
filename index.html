@@ -25,9 +25,14 @@
   <body>
     <h2>載入 Excel檔</h2>
     <input type="file" id="fileInput" />
+    <div id="selectSection"></div>
     <div id="headers"></div>
 
     <p></p>
+    <hr>
+    <h2>輸入試算表資訊</h2>
+    <p><a href="https://docs.google.com/spreadsheets/u/0/" target="_blank">----前往Google試算表----</a></p>
+    <br>
     <label for="worksheetNameSetting"><strong>工作表名稱</strong></label>
     <input
       id="worksheetNameSetting"
@@ -36,7 +41,7 @@
       style="width: 100%; margin-bottom: 10px"
     />
 
-    <h3>Apps Script 網址</h3>
+    <label for="scriptUrl"><strong>Apps Script 網址</strong></label>
     <input
       type="text"
       id="scriptUrl"
@@ -44,19 +49,22 @@
       placeholder="請輸入 apps script 部署的網址"
     />
     <p></p>
+    <hr>
+    <h2>網頁及程式碼生成</h2>
     <button id="generateBtn">產生 查詢系統預覽網頁及程式碼</button>
     <button id="cleariframecontent">清空產生的程式碼</button>
 
     <h3>HTML 程式碼</h3>
+    <button id="copyBtn">複製程式碼</button>
+    <span id="copyStatus" style="margin-left: 10px; color: green"></span>
     <textarea
       id="outputCode"
       rows="12"
       style="width: 100%; font-family: monospace"
     ></textarea>
-    <button id="copyBtn">複製程式碼</button>
-    <span id="copyStatus" style="margin-left: 10px; color: green"></span>
     <script>
       const fileInput = document.getElementById("fileInput");
+      const selectSection = document.getElementById("selectSection");
       const headersDiv = document.getElementById("headers");
       const output = document.getElementById("outputCode");
       let headers = [];
@@ -67,24 +75,52 @@
         reader.onload = function (event) {
           const data = new Uint8Array(event.target.result);
           const workbook = XLSX.read(data, { type: "array" });
+          ChooseWorkSheet(workbook);
           const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-          const jsonData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
-          headers = jsonData[0];
-          headersDiv.innerHTML = "";
-          headers.forEach((header, index) => {
-            const div = document.createElement("div");
-            div.className = "header-item";
-            div.innerHTML = `
-            <label>
-              <input type="checkbox" data-index="${index}">
-              ${header} (ID: param${index})
-            </label>
-          `;
-            headersDiv.appendChild(div);
-          });
+          refreshHeaders(firstSheet);
         };
         reader.readAsArrayBuffer(file);
       });
+
+      function ChooseWorkSheet(workbook) {
+        selectSection.appendChild(
+          document.createElement("h3")
+        ).textContent = "請選擇工作表";
+        const sheetNames = workbook.SheetNames;
+        const select = document.createElement("select");
+        select.id = "worksheetNameSetting";
+        select.addEventListener("change", (e) => {
+          const selectedSheet = e.target.value;
+          console.log("選擇的工作表:", selectedSheet);
+          refreshHeaders(workbook.Sheets[selectedSheet]);
+        });
+        sheetNames.forEach((name) => {
+          console.log(name);
+          const option = document.createElement("option");
+          option.value = name;
+          option.textContent = name;
+          select.appendChild(option);
+        });
+        selectSection.appendChild(select);
+      }
+
+      function refreshHeaders(sheet){
+        const jsonData = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+        if(jsonData.length===0) return alert("工作表沒有資料，請確認選擇的工作表是否正確。");
+        headers = jsonData[0];
+        headersDiv.innerHTML = "";
+        headers.forEach((header, index) => {
+          const div = document.createElement("div");
+          div.className = "header-item";
+          div.innerHTML = `
+          <label>
+            <input type="checkbox" data-index="${index}">
+            ${header} (ID: param${index})
+          </label>
+        `;
+          headersDiv.appendChild(div);
+        });
+      }
 
       document.getElementById("generateBtn").addEventListener("click", () => {
         const url = document.getElementById("scriptUrl").value;
