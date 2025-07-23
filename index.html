@@ -19,6 +19,20 @@
         height: 300px;
         margin-top: 20px;
       }
+      .btn {
+        display: inline-block;
+        padding: 10px 20px;
+        background-color: #007bff;
+        color: white;
+        text-decoration: none;
+        border-radius: 5px;
+        border: none;
+        font-weight: bold;
+        cursor: pointer;
+      }
+      .btn:hover {
+        background-color: #0056b3;
+      }
     </style>
     <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.mini.min.js"></script>
   </head>
@@ -31,8 +45,8 @@
     <p></p>
     <hr>
     <h2>輸入試算表資訊</h2>
-    <p><a href="https://docs.google.com/spreadsheets/u/0/" target="_blank">----前往Google試算表----</a></p>
-    <br>
+    <p><a class="btn" href="https://docs.google.com/spreadsheets/u/0/" target="_blank">前往Google試算表</a></p>
+    <br><br>
     <label for="worksheetNameSetting"><strong>工作表名稱</strong></label>
     <input
       id="worksheetNameSetting"
@@ -47,6 +61,7 @@
       id="scriptUrl"
       style="width: 100%"
       placeholder="請輸入 apps script 部署的網址"
+      value="https://script.google.com/macros/s/AKfycbz1N5JFtQJuazMyiftXUG6poQ_Myk1Y-FJoHiMXF4X85Oa97baAxreOScwZYH3MG0NHUQ/exec"
     />
     <p></p>
     <hr>
@@ -71,6 +86,12 @@
 
       fileInput.addEventListener("change", (e) => {
         const file = e.target.files[0];
+        if(!file || !file.name.endsWith(".xlsx")) {
+          alert("請選擇一個有效的 Excel 檔案 (.xlsx)");
+          ChooseWorkSheet(null);
+          refreshHeaders(null);
+          return;
+        }
         const reader = new FileReader();
         reader.onload = function (event) {
           const data = new Uint8Array(event.target.result);
@@ -83,6 +104,11 @@
       });
 
       function ChooseWorkSheet(workbook) {
+        selectSection.textContent="";
+        if(!workbook || !workbook.SheetNames || workbook.SheetNames.length === 0) {
+          alert("工作簿中沒有可用的工作表。");
+          return;
+        }
         selectSection.appendChild(
           document.createElement("h3")
         ).textContent = "請選擇工作表";
@@ -105,10 +131,11 @@
       }
 
       function refreshHeaders(sheet){
+        headersDiv.innerHTML = "";
+        if(!sheet) return;
         const jsonData = XLSX.utils.sheet_to_json(sheet, { header: 1 });
         if(jsonData.length===0) return alert("工作表沒有資料，請確認選擇的工作表是否正確。");
         headers = jsonData[0];
-        headersDiv.innerHTML = "";
         headers.forEach((header, index) => {
           const div = document.createElement("div");
           div.className = "header-item";
