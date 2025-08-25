@@ -114,7 +114,7 @@
         ).textContent = "請選擇工作表";
         const sheetNames = workbook.SheetNames;
         const select = document.createElement("select");
-        select.id = "worksheetNameSetting";
+        select.id = "chooseSheetNameSetting";
         select.addEventListener("change", (e) => {
           const selectedSheet = e.target.value;
           console.log("選擇的工作表:", selectedSheet);
@@ -252,6 +252,11 @@
       <script>
         const url = "${url}";
         const btn = document.getElementById("btn");
+        document.addEventListener("keydown", function(e) {
+          if (e.key === "Enter") {
+            e.preventDefault();
+          }
+        });
         async function query() {
           btn.disabled = true;
           btn.innerText = "正在查詢中，請稍後...";
@@ -338,3 +343,4 @@
     </script>
   </body>
 </html>
+
